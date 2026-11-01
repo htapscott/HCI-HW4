@@ -27,6 +27,16 @@ questions = [{
                 "id": 2,
                 "q": "What is the main goal of the ideation phase of iterative design?",
                 "a": "Generating as many possible design solutions as possible"
+                },
+             {
+                "id": 3, # New questionss
+                "q": "Which Gestalt principle groups elements that are close together?",
+                "a": "Proximity"
+                },
+             {
+                "id": 4,
+                "q": "What is a signifier in interface design?",
+                "a": "A perceivable cue that shows where or how an interaction can happen"
                 }
             ]
 
@@ -46,7 +56,7 @@ def add_question(req: QuestionRequest):
         "a": req.answer
     })
 
-# TODO: Add a new route that can be used to a delete a question/answer from the dataset.
+# TODO: Add a new route that can be used to a delete a question/answer from the dataset. # Completed already
 @app.delete("/delete/{id}")
 def delete_question(id: int):
     for question in questions:

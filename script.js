@@ -16,7 +16,10 @@ const editDialog = document.querySelector("#edit-dialog");
 const editQuestion = document.querySelector("#edit-question");
 const editAnswer = document.querySelector("#edit-answer");
 // TODO: grab references to any necessary elements you added to index.html (search, counter, prev/next buttons)
-
+const prevButton = document.querySelector("#prev-button");
+const nextButton = document.querySelector("#next-button");
+const counter = document.querySelector("#counter");
+// ADDED buttons
 
 // ---------- Errors ----------
 
@@ -79,21 +82,25 @@ function showPage() {
   if (currentIndex < 0) currentIndex = 0;
   renderPreviews();
   showCard();
+  updateCounter();
 }
 
 // Sidebar: one preview per question. Clicking a preview shows that card.
 function renderPreviews() {
   previewList.innerHTML = "";
   questions.forEach(function (question, index) {
-    const preview = document.createElement("div");
+    const preview = document.createElement("button");
+    preview.type = "button";
     preview.className = "preview";
     if (index === currentIndex) {
       preview.classList.add("active");
+      preview.setAttribute("aria-current", "true");
     }
     preview.textContent = question.q;
     preview.addEventListener("click", function () {
       currentIndex = index;
       showPage();
+      previewList.querySelector(".active").focus();
     });
     previewList.append(preview);
   });
@@ -123,16 +130,21 @@ function showCard() {
     openEditDialog(question);
   });
 
-  const questionText = document.createElement("p");
+  const questionText = document.createElement("button");
+  questionText.type = "button";
   questionText.className = "question";
   questionText.textContent = question.q;
+  questionText.setAttribute("aria-expanded", "false");
+  questionText.setAttribute("aria-controls", "current-answer");
 
   const answerText = document.createElement("p");
   answerText.className = "answer hidden";
+  answerText.id = "current-answer";
   answerText.textContent = question.a;
 
   questionText.addEventListener("click", function () {
     answerText.classList.toggle("hidden");
+    questionText.setAttribute("aria-expanded", String(!answerText.classList.contains("hidden")));
   });
 
   card.append(deleteButton, editButton, questionText, answerText);
@@ -142,11 +154,31 @@ function showCard() {
 
 // ---------- Navigation and search ----------
 
-// TODO: Previous / Next. Write functions that change currentIndex to the appropriate value
+// TODO: Previous / Next. Write functions that change currentIndex to the appropriate value ALL DONE
 // (wrapping around at both ends) and then call showPage(). Then write event listeners to attach these
 // functions to the appropriate Previous/Next buttons. 
+function previousQuestion() { // prev question ability
+  if (questions.length === 0) return;
+  currentIndex = (currentIndex - 1 + questions.length) % questions.length;
+  showPage();
+}
 
-// TODO: Update the progress text ("Card 3 of 3") in the counter whenever the card changes.
+function nextQuestion() { // next question added
+  if (questions.length === 0) return;
+  currentIndex = (currentIndex + 1) % questions.length;
+  showPage();
+}
+
+prevButton.addEventListener("click", previousQuestion);
+nextButton.addEventListener("click", nextQuestion);
+
+// TODO: Update the progress text ("Card 3 of 3") in the counter whenever the card changes. DONE
+function updateCounter() {
+  const cardNumber = questions.length === 0 ? 0 : currentIndex + 1;
+  counter.textContent = "Card " + cardNumber + " of " + questions.length;
+  prevButton.disabled = questions.length < 2;
+  nextButton.disabled = questions.length < 2;
+}
 
 
 // ---------- Actions ----------
@@ -177,10 +209,17 @@ document.querySelector("#update-button").addEventListener("click", async functio
 });
 
 document.querySelector("#add-button").addEventListener("click", async function () {
-  await apiSend("POST", "/add", {
-    question: newQuestion.value,
-    answer: newAnswer.value
+  hideError();
+  if (!newQuestion.value.trim() || !newAnswer.value.trim()) {
+    showError("Enter both a question and an answer. Spaces alone do not count.");
+    (!newQuestion.value.trim() ? newQuestion : newAnswer).focus();
+    return;
+  }
+  const added = await apiSend("POST", "/add", {
+    question: newQuestion.value.trim(),
+    answer: newAnswer.value.trim()
   });
+  if (!added) return;
   newQuestion.value = "";
   newAnswer.value = "";
   currentIndex = questions.length;
